@@ -111,7 +111,8 @@ Page {
 
             TextSwitch {
                 id: fullSwitch
-                text: qsTr("Store all frames")
+                text: qsTr("Record idle frames")
+                description: qsTr("Keep writing the last frame while the screen is unchanged, so playback matches real time")
                 checked: conf.fullmode
                 automaticCheck: false
                 onClicked: {

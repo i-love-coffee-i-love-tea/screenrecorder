@@ -38,7 +38,12 @@
     </message>
     <message>
         <location filename="../qml/pages/FirstPage.qml" line="114"/>
-        <source>Store all frames</source>
+        <source>Record idle frames</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qml/pages/FirstPage.qml" line="115"/>
+        <source>Keep writing the last frame while the screen is unchanged, so playback matches real time</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
