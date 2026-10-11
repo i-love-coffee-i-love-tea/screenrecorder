@@ -5,13 +5,54 @@ import com.jolla.settings 1.0
 import com.jolla.settings.system 1.0
 import Nemo.Notifications 1.0
 import org.nemomobile.lipstick 0.1 as Lipstick
+import Nemo.Configuration 1.0
+import QtMultimedia 5.6
 
 SettingsToggle {
     id: root
 
     property int serviceState
     property bool startedFromToggle
-
+    MediaPlayer {
+        id: tickPlayer
+        source: Qt.resolvedUrl("/usr/share/screenrecorder-gui.desktop/qml/sounds/tick.wav")
+    }
+    Timer {
+        id: delayTimer
+        interval: conf.startdelay
+        repeat: false
+        onTriggered: {
+            trigger();
+        }
+        function trigger() {
+            if (serviceState == 1) {
+                dbus.call("Start")
+            } else if (serviceState == 2) {
+                dbus.call("Stop")
+            }
+            delayTimer.running = false;
+            tickTimer.running = false;
+        }
+    }
+    Timer {
+        id: tickTimer
+        interval: 1000
+        repeat: true
+        onTriggered: {
+            tickPlayer.play()
+        }
+    }
+    ConfigurationGroup {
+        id: conf
+        path: "/org/coderus/screenrecorder"
+        property int fps: 24
+        property int buffers: 48
+        property bool fullmode: false
+        property real scale: 1.0
+        property int quality: 100
+        property bool smooth: false
+        property bool startdelay: 0
+    }
     DBusInterface {
         id: dbus
         service: "org.coderus.screenrecorder"
@@ -59,12 +100,7 @@ SettingsToggle {
                                   : "Saving..."
 
     onToggled: {
-        if (serviceState == 1) {
-            dbus.call("Start")
-            startedFromToggle = true
-        } else if (serviceState == 2) {
-            dbus.call("Stop")
-        }
+        delayTimer.running = true
     }
 
     menu: ContextMenu {
