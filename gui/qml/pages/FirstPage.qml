@@ -3,11 +3,16 @@ import Sailfish.Silica 1.0
 import Nemo.DBus 2.0
 import Nemo.Configuration 1.0
 import Nemo.Notifications 1.0
+import QtMultimedia 5.6
 
 Page {
     id: page
     property bool startedFromToggle:false
 
+    MediaPlayer {
+        id: tickPlayer
+        source: Qt.resolvedUrl("../sounds/tick.wav")
+    }
     Timer {
         id: repeatedGetState
         interval: 1000
@@ -20,6 +25,32 @@ Page {
             })
         }
     }
+    Timer {
+        id: delayTimer
+        interval: 1000
+        repeat: false
+        onTriggered: {
+            trigger();
+        }
+        function trigger() {
+            if (serviceState == 1) {
+                dbus.call("Start")
+            } else if (serviceState == 2) {
+                dbus.call("Stop")
+            }
+            delayTimer.running = false;
+            tickTimer.running = false;
+        }
+    }
+    Timer {
+        id: tickTimer
+        interval: 1000
+        repeat: true
+        onTriggered: {
+            tickPlayer.play()
+        }
+    }
+
     DBusInterface {
         id: dbus
         service: "org.coderus.screenrecorder"
@@ -66,7 +97,7 @@ Page {
         property real scale: 1.0
         property int quality: 100
         property bool smooth: false
-        property bool convert: false
+        property bool startdelay: 0
     }
 
     SilicaFlickable {
@@ -81,7 +112,20 @@ Page {
             PageHeader {
                 title: qsTr("Screenrecorder")
             }
-
+            Slider {
+                id: startDelaySlider
+                width: parent.width
+                minimumValue: 0
+                maximumValue: 10
+                stepSize: 1
+                value: conf.startdelay
+                label: qsTr("Start delay")
+                valueText: qsTr("%1 s").arg(value)
+                onReleased: {
+                    delayTimer.interval = value * 1000
+                    conf.startdelay = value
+                }
+            }
             Slider {
                 id: fpsSlider
                 width: parent.width
@@ -128,8 +172,8 @@ Page {
                 maximumValue: 100
                 stepSize: 1
                 value: conf.quality
-                label: qsTr("JPEG frames quality")
-                valueText: qsTr("%1%").arg(value)
+                label: qsTr("Encoding quality")
+                valueText: qsTr("%1").arg(value)
                 onReleased: {
                     conf.quality = value
                 }
@@ -160,16 +204,6 @@ Page {
                 }
             }
 
-            TextSwitch {
-                id: convertSwitch
-                text: qsTr("Convert to MP4 (smaller files)")
-                checked: conf.convert
-                automaticCheck: false
-                onClicked: {
-                    conf.convert = !checked
-                }
-
-            }
             Button {
                 id: actionButton
                 anchors.horizontalCenter: parent.horizontalCenter
@@ -183,22 +217,15 @@ Page {
                         return qsTr("Stop")
                     case 3:
                         return qsTr("Saving, please wait")
-                    case 4:
-                        return qsTr("Converting, please wait")
                     }
                 }
                 enabled: serviceState > 0 && serviceState < 3
                 onClicked: {
                     startedFromToggle = true
-                    trigger()
+                    delayTimer.running = true
+                    tickTimer.running = true
                 }
-                function trigger() {
-                    if (serviceState == 1) {
-                        dbus.call("Start")
-                    } else if (serviceState == 2) {
-                        dbus.call("Stop")
-                    }
-                }
+
             }
 
             Label {
